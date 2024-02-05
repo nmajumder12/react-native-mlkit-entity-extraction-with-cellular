@@ -158,10 +158,4 @@ const MLKitEntityExtraction = {
 }
 
 export default MLKitEntityExtraction;
-export {
-    annotate,
-    isModelDownloaded,
-    deleteDownloadedModel,
-    downloadModel
-}
 
