@@ -1,4 +1,4 @@
-import { NativeModules,Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 const { MLKitEntityExtraction: NativeMLKitEntityExtraction } = NativeModules;
 const isAndroid = Platform.OS === 'android';
@@ -81,21 +81,7 @@ export const LANG_TAGS = {
     VIETNAMESE: "vi",
     WELSH: "cy",
 }
-export type ENTITY_LANG_TAGS_TYPE = 'ARABIC' |
-    'GERMAN' |
-    'ENGLISH' |
-    'SPANISH' |
-    'FRENCH' |
-    'ITALIAN' |
-    'JAPANESE' |
-    'KOREAN' |
-    'DUTCH' |
-    'POLISH' |
-    'PORTUGUESE' |
-    'RUSSIAN' |
-    'THAI' |
-    'TURKISH' |
-    'CHINESE';
+
 export const ENTITY_TYPES = {
     TYPE_ADDRESS: 1,
     TYPE_DATE_TIME: 2,
@@ -109,23 +95,12 @@ export const ENTITY_TYPES = {
     TYPE_URL: 10,
     TYPE_MONEY: 11,
 }
-export type ENTITY_TYPE = 'TYPE_ADDRESS'|
-'TYPE_DATE_TIME'|
-'TYPE_EMAIL'|
-'TYPE_FLIGHT_NUMBER'|
-'TYPE_IBAN'|
-'TYPE_ISBN'|
-'TYPE_PAYMENT_CARD'|
-'TYPE_PHONE'|
-'TYPE_TRACKING_NUMBER'|
-'TYPE_URL'|
-'TYPE_MONEY';
 
-const annotate = (text:string,lang:ENTITY_LANG_TAGS_TYPE, types: ENTITY_TYPE[]) => {
-    return new Promise((resolver,rejecter) => {
-        let mappedTypes:number[] = [];
-        for(let tp of types) {
-            if(typeof(ENTITY_TYPES[tp]) === 'number') mappedTypes.push(ENTITY_TYPES[tp]);
+const annotate = (text, lang, types) => {
+    return new Promise((resolver, rejecter) => {
+        let mappedTypes = [];
+        for (let tp of types) {
+            if (typeof(ENTITY_TYPES[tp]) === 'number') mappedTypes.push(ENTITY_TYPES[tp]);
         }
         NativeMLKitEntityExtraction.annotate(
             text,
@@ -137,25 +112,25 @@ const annotate = (text:string,lang:ENTITY_LANG_TAGS_TYPE, types: ENTITY_TYPE[]) 
             (e) => {
                 rejecter(e);
             });
-    })
+    });
 }
 
-const isModelDownloaded = (language:ENTITY_LANG_TAGS_TYPE) => {
+const isModelDownloaded = (language) => {
     return new Promise((resolver, rejecter) => {
         NativeMLKitEntityExtraction.isModelDownloaded(
             isAndroid ? ENTITY_LANG_TAGS[language] : LANG_TAGS[language],
-            (v) => { 
-                if(Platform.OS === 'ios') {
-                    resolver(v === 1 ? true : false); 
-                }else{
+            (v) => {
+                if (Platform.OS === 'ios') {
+                    resolver(v === 1 ? true : false);
+                } else {
                     resolver(v);
                 }
-            },
-            // (e) => { rejecter(e); } // no need for now
+            }
         );
     });
 }
-const deleteDownloadedModel = (language: ENTITY_LANG_TAGS_TYPE) => {
+
+const deleteDownloadedModel = (language) => {
     return new Promise((resolver, rejecter) => {
         NativeMLKitEntityExtraction.deleteDownloadedModel(
             isAndroid ? ENTITY_LANG_TAGS[language] : LANG_TAGS[language],
@@ -164,7 +139,8 @@ const deleteDownloadedModel = (language: ENTITY_LANG_TAGS_TYPE) => {
         );
     });
 }
-const downloadModel = (language: ENTITY_LANG_TAGS_TYPE) => {
+
+const downloadModel = (language) => {
     return new Promise((resolver, rejecter) => {
         NativeMLKitEntityExtraction.downloadModel(
             isAndroid ? ENTITY_LANG_TAGS[language] : LANG_TAGS[language],
@@ -180,6 +156,7 @@ const MLKitEntityExtraction = {
     deleteDownloadedModel,
     downloadModel
 }
+
 export default MLKitEntityExtraction;
 export {
     annotate,
@@ -187,3 +164,4 @@ export {
     deleteDownloadedModel,
     downloadModel
 }
+
