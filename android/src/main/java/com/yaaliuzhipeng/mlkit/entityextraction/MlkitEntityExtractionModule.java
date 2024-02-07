@@ -194,7 +194,7 @@ public class MlkitEntityExtractionModule extends ReactContextBaseJavaModule {
         EntityExtractionRemoteModel lm = new EntityExtractionRemoteModel
                 .Builder(lang)
                 .build();
-        modelManager.download(lm, new DownloadConditions.Builder().requireWifi().build())
+        modelManager.download(lm, new DownloadConditions.Builder().build())
                 .addOnSuccessListener(v -> {
                     successCallback.invoke("success");
                 })
