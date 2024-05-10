@@ -57,5 +57,5 @@ repositories {
 dependencies {
     //noinspection GradleDynamicVersion
     implementation 'com.facebook.react:react-native:+'  // From node_modules
-    implementation 'com.google.mlkit:entity-extraction:16.0.0-beta4'
+    implementation 'com.google.mlkit:entity-extraction:16.0.0-beta5'
 }
