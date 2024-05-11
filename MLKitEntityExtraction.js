@@ -120,11 +120,7 @@ const isModelDownloaded = (language) => {
         NativeMLKitEntityExtraction.isModelDownloaded(
             isAndroid ? ENTITY_LANG_TAGS[language] : LANG_TAGS[language],
             (v) => {
-                if (Platform.OS === 'ios') {
-                    resolver(v === 1 ? true : false);
-                } else {
-                    resolver(v);
-                }
+                resolver(v);
             }
         );
     });
