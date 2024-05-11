@@ -2,7 +2,17 @@
 
 #import "MlkitEntityExtraction.h"
 
-@implementation MlkitEntityExtraction
+@implementation MlkitEntityExtraction {
+    MLKEntityExtractor *_entityExtractor;
+    id _downloadSuccessObserver;
+    id _downloadFailObserver;
+}
+
+- (void)dealloc {
+    // Remove observers to avoid memory leaks
+    [[NSNotificationCenter defaultCenter] removeObserver:_downloadSuccessObserver];
+    [[NSNotificationCenter defaultCenter] removeObserver:_downloadFailObserver];
+}
 
 - (int)mapEntityType:(NSString *)type {
     if ([type isEqualToString:MLKEntityExtractionEntityTypeAddress]) {
@@ -182,32 +192,31 @@ RCT_EXPORT_METHOD(downloadModel:(NSString *)lang
                   failCallback:(RCTResponseSenderBlock)failCallback) {
     MLKModelDownloadConditions *conditions = [[MLKModelDownloadConditions alloc] initWithAllowsCellularAccess:NO allowsBackgroundDownloading:YES];
     MLKEntityExtractionRemoteModel *lmodel = [MLKEntityExtractionRemoteModel entityExtractorRemoteModelWithIdentifier:MLKEntityExtractionModelIdentifierForLanguageTag(lang)];
-    NSLog(@"lang is ======> %@", lang);
     
-    id sob;
-    id fob;
-    sob = [NSNotificationCenter.defaultCenter addObserverForName:MLKModelDownloadDidSucceedNotification
-                                                           object:nil
-                                                            queue:nil
-                                                       usingBlock:^(NSNotification * _Nonnull note) {
+    __weak typeof(self) weakSelf = self;
+    _downloadSuccessObserver = [[NSNotificationCenter defaultCenter] addObserverForName:MLKModelDownloadDidSucceedNotification
+                                                                                   object:nil
+                                                                                    queue:nil
+                                                                               usingBlock:^(NSNotification * _Nonnull note) {
         MLKEntityExtractionRemoteModel *model = note.userInfo[MLKModelDownloadUserInfoKeyRemoteModel];
         if ([model isKindOfClass:[MLKEntityExtractionRemoteModel class]] && model == lmodel) {
             successCallback(@[@"success"]);
         }
-        [NSNotificationCenter.defaultCenter removeObserver:sob];
-        [NSNotificationCenter.defaultCenter removeObserver:fob];
+        [[NSNotificationCenter defaultCenter] removeObserver:_downloadSuccessObserver];
+        [[NSNotificationCenter defaultCenter] removeObserver:_downloadFailObserver];
     }];
-    fob = [NSNotificationCenter.defaultCenter addObserverForName:MLKModelDownloadDidFailNotification
-                                                           object:nil
-                                                            queue:nil
-                                                       usingBlock:^(NSNotification * _Nonnull note) {
+    
+    _downloadFailObserver = [[NSNotificationCenter defaultCenter] addObserverForName:MLKModelDownloadDidFailNotification
+                                                                                object:nil
+                                                                                 queue:nil
+                                                                            usingBlock:^(NSNotification * _Nonnull note) {
         MLKEntityExtractionRemoteModel *model = note.userInfo[MLKModelDownloadUserInfoKeyRemoteModel];
         if ([model isKindOfClass:[MLKEntityExtractionRemoteModel class]] && model == lmodel) {
             NSError *error = note.userInfo[MLKModelDownloadUserInfoKeyError];
             failCallback(@[error.localizedDescription]);
         }
-        [NSNotificationCenter.defaultCenter removeObserver:sob];
-        [NSNotificationCenter.defaultCenter removeObserver:fob];
+        [[NSNotificationCenter defaultCenter] removeObserver:_downloadSuccessObserver];
+        [[NSNotificationCenter defaultCenter] removeObserver:_downloadFailObserver];
     }];
     
     [[MLKModelManager modelManager] downloadModel:lmodel conditions:conditions];
