@@ -180,7 +180,7 @@ RCT_EXPORT_METHOD(deleteDownloadedModel:(NSString *)lang
 RCT_EXPORT_METHOD(downloadModel:(NSString *)lang
                   successCallback:(RCTResponseSenderBlock)successCallback
                   failCallback:(RCTResponseSenderBlock)failCallback) {
-    MLKModelDownloadConditions *conditions = [[MLKModelDownloadConditions alloc] initWithAllowsCellularAccess:NO allowsBackgroundDownloading:YES];
+    MLKModelDownloadConditions *conditions = [[MLKModelDownloadConditions alloc] initWithAllowsCellularAccess:YES allowsBackgroundDownloading:YES];
     MLKEntityExtractionRemoteModel *lmodel = [MLKEntityExtractionRemoteModel entityExtractorRemoteModelWithIdentifier:MLKEntityExtractionModelIdentifierForLanguageTag(lang)];
     NSLog(@"lang is ======> %@", lang);
     
