@@ -4,15 +4,32 @@
 
 @implementation MlkitEntityExtraction {
     MLKEntityExtractor *_entityExtractor;
+    NSMutableSet *_typesFilter;
     id _downloadSuccessObserver;
     id _downloadFailObserver;
 }
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _typesFilter = [NSMutableSet new];
+    }
+    return self;
+}
+
 - (void)dealloc {
-    // Remove observers to avoid memory leaks
     [[NSNotificationCenter defaultCenter] removeObserver:_downloadSuccessObserver];
     [[NSNotificationCenter defaultCenter] removeObserver:_downloadFailObserver];
+    [_entityExtractor release];
+    [_typesFilter release];
+    [super dealloc];
 }
+
+- (void)clearTypesFilter {
+    [_typesFilter removeAllObjects];
+}
+
+RCT_EXPORT_MODULE(MLKitEntityExtraction)
 
 - (int)mapEntityType:(NSString *)type {
     if ([type isEqualToString:MLKEntityExtractionEntityTypeAddress]) {
@@ -70,8 +87,6 @@
     }
 }
 
-RCT_EXPORT_MODULE(MLKitEntityExtraction)
-
 RCT_EXPORT_METHOD(annotate:(NSString *)text
                   lang:(NSString *)lang
                   types:(NSArray *)types
@@ -79,20 +94,22 @@ RCT_EXPORT_METHOD(annotate:(NSString *)text
                   failCallback:(RCTResponseSenderBlock)failCallback) {
     MLKEntityExtractorOptions *options = [[MLKEntityExtractorOptions alloc] initWithModelIdentifier:MLKEntityExtractionModelIdentifierForLanguageTag(lang)];
     if (_entityExtractor == nil) {
-        _entityExtractor = [MLKEntityExtractor entityExtractorWithOptions:options];
+        _entityExtractor = [[MLKEntityExtractor entityExtractorWithOptions:options] retain];
+        [options release]; // Release options since it's not needed anymore
     }
     
-    MLKEntityExtractionParams *params = [[MLKEntityExtractionParams alloc] init];
-    NSMutableSet *tps = [NSMutableSet new];
+    [self clearTypesFilter]; // Clear typesFilter before reusing
+    
     for (NSNumber *tp in types) {
         NSString *tpstr = [self mapEntityTypeRev:[tp intValue]];
         if (![tpstr isEqualToString:@""]) {
-            [tps addObject:tpstr];
+            [_typesFilter addObject:tpstr]; // Add types to filter set
         }
     }
-    params.typesFilter = tps;
     
-    id this = self;
+    MLKEntityExtractionParams *params = [[MLKEntityExtractionParams alloc] init];
+    params.typesFilter = _typesFilter;
+    
     [_entityExtractor annotateText:text
                         withParams:params
                         completion:^(NSArray *_Nullable entityAnnotations, NSError *_Nullable error) {
@@ -109,10 +126,12 @@ RCT_EXPORT_METHOD(annotate:(NSString *)text
             NSMutableArray *annoarr = [[NSMutableArray alloc] init];
             for (MLKEntity *entity in entities) {
                 NSString *entityType = entity.entityType;
-                int mappedType = [this mapEntityType:entityType];
+                int mappedType = [self mapEntityType:entityType];
                 [annomap setObject:@(mappedType) forKey:@"type"];
                 if ([entityType isEqualToString:MLKEntityExtractionEntityTypeDateTime]) {
+                // Handle entity types as needed
                     MLKDateTimeEntity *dateTimeEntity = entity.dateTimeEntity;
+                // ...
                     NSMutableDictionary *dateTimeMap = [[NSMutableDictionary alloc] init];
                     [dateTimeMap setObject:@((int)dateTimeEntity.dateTimeGranularity) forKey:@"granularity"];
                     [dateTimeMap setObject:@(dateTimeEntity.dateTime.timeIntervalSince1970) forKey:@"timestamp"];
@@ -160,8 +179,12 @@ RCT_EXPORT_METHOD(annotate:(NSString *)text
                 [annomap setObject:annoarr forKey:@"entities"];
             }
             [annots addObject:annomap];
+            [annoarr release]; // Release annoarr since it's not needed anymore
+            [annomap release]; // Release annomap since it's not needed anymore
         }
+        [params release]; // Release params since it's not needed anymore
         successCallback(@[annots]);
+        [annots release]; // Release annots since it's not needed anymore
     }];
 }
 
@@ -193,7 +216,6 @@ RCT_EXPORT_METHOD(downloadModel:(NSString *)lang
     MLKModelDownloadConditions *conditions = [[MLKModelDownloadConditions alloc] initWithAllowsCellularAccess:NO allowsBackgroundDownloading:YES];
     MLKEntityExtractionRemoteModel *lmodel = [MLKEntityExtractionRemoteModel entityExtractorRemoteModelWithIdentifier:MLKEntityExtractionModelIdentifierForLanguageTag(lang)];
     
-    __weak typeof(self) weakSelf = self;
     _downloadSuccessObserver = [[NSNotificationCenter defaultCenter] addObserverForName:MLKModelDownloadDidSucceedNotification
                                                                                    object:nil
                                                                                     queue:nil
